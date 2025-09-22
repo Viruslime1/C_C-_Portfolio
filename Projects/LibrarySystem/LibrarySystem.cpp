@@ -1,0 +1,179 @@
+⚡ Основные возможности:
+
+Добавление книг
+
+Удаление книг
+
+Поиск по названию или автору
+
+Вывод списка книг
+
+Сохранение базы в файл и загрузка при старте программы
+
+#include <iostream>
+#include <vector>
+#include <fstream>
+using namespace std;
+
+struct Book {
+    int id;
+    string title;
+    string author;
+    bool available;
+
+    Book(int i, string t, string a, bool av = true)
+        : id(i), title(t), author(a), available(av) {}
+};
+
+class Library {
+private:
+    vector<Book> books;
+    int nextId = 1;
+public:
+    void loadFromFile(const string &filename) {
+        ifstream in(filename);
+        if(!in.is_open()) return;
+
+        books.clear();
+        int id;
+        string title, author;
+        bool available;
+
+        while(in >> id) {
+            in.ignore();
+            getline(in, title);
+            getline(in, author);
+            in >> available;
+            books.push_back(Book(id, title, author, available));
+            if(id >= nextId) nextId = id + 1;
+        }
+        in.close();
+    }
+
+    void saveToFile(const string &filename) {
+        ofstream out(filename);
+        for(auto &b : books) {
+            out << b.id << "\n" << b.title << "\n" << b.author << "\n" << b.available << "\n";
+        }
+        out.close();
+    }
+
+    void addBook(string title, string author) {
+        books.push_back(Book(nextId++, title, author));
+        cout << "Книга добавлена!\n";
+    }
+
+    void removeBook(int id) {
+        for(size_t i=0; i<books.size(); i++) {
+            if(books[i].id == id) {
+                books.erase(books.begin()+i);
+                cout << "Книга удалена!\n";
+                return;
+            }
+        }
+        cout << "Книга не найдена!\n";
+    }
+
+    void searchBook(string keyword) {
+        cout << "Результаты поиска:\n";
+        for(auto &b : books) {
+            if(b.title.find(keyword) != string::npos || b.author.find(keyword) != string::npos) {
+                cout << b.id << ". " << b.title << " — " << b.author 
+                     << (b.available ? " (доступна)" : " (занята)") << endl;
+            }
+        }
+    }
+
+    void listBooks() {
+        cout << "Список книг:\n";
+        for(auto &b : books) {
+            cout << b.id << ". " << b.title << " — " << b.author 
+                 << (b.available ? " (доступна)" : " (занята)") << endl;
+        }
+    }
+
+    void borrowBook(int id) {
+        for(auto &b : books) {
+            if(b.id == id) {
+                if(b.available) {
+                    b.available = false;
+                    cout << "Книга взята!\n";
+                } else {
+                    cout << "Книга уже занята!\n";
+                }
+                return;
+            }
+        }
+        cout << "Книга не найдена!\n";
+    }
+
+    void returnBook(int id) {
+        for(auto &b : books) {
+            if(b.id == id) {
+                b.available = true;
+                cout << "Книга возвращена!\n";
+                return;
+            }
+        }
+        cout << "Книга не найдена!\n";
+    }
+};
+
+int main() {
+    Library lib;
+    string filename = "library.txt";
+    lib.loadFromFile(filename);
+
+    int choice;
+    string title, author, keyword;
+    int id;
+
+    while(true) {
+        cout << "\n--- Система управления библиотекой ---\n";
+        cout << "1. Добавить книгу\n2. Удалить книгу\n3. Список книг\n";
+        cout << "4. Поиск книги\n5. Взять книгу\n6. Вернуть книгу\n7. Выход\n";
+        cout << "Выберите действие: ";
+        cin >> choice;
+
+        switch(choice) {
+            case 1:
+                cin.ignore();
+                cout << "Введите название: ";
+                getline(cin, title);
+                cout << "Введите автора: ";
+                getline(cin, author);
+                lib.addBook(title, author);
+                break;
+            case 2:
+                cout << "Введите ID книги: ";
+                cin >> id;
+                lib.removeBook(id);
+                break;
+            case 3:
+                lib.listBooks();
+                break;
+            case 4:
+                cin.ignore();
+                cout << "Введите ключевое слово: ";
+                getline(cin, keyword);
+                lib.searchBook(keyword);
+                break;
+            case 5:
+                cout << "Введите ID книги: ";
+                cin >> id;
+                lib.borrowBook(id);
+                break;
+            case 6:
+                cout << "Введите ID книги: ";
+                cin >> id;
+                lib.returnBook(id);
+                break;
+            case 7:
+                lib.saveToFile(filename);
+                cout << "Выход...\n";
+                return 0;
+            default:
+                cout << "Неверный выбор!\n";
+        }
+    }
+}
